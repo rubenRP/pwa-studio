@@ -63,11 +63,11 @@ async function buildModuleWith(
 
     const resolver = new MagentoResolver({ paths, alias });
 
-    const transforms = new ModuleTransformConfig(resolver);
-    bus.getTargetsOf('@magento/pwa-buildpack').transformModules.call(x =>
-        transforms.add(x)
-    );
-    const transformRequests = await transforms.toLoaderOptions();
+    const transforms = ModuleTransformConfig.create(resolver);
+    await bus
+        .getTargetsOf('@magento/pwa-buildpack')
+        .transformModules.promise(transforms);
+    const transformRequests = await transforms.groupByType();
 
     let entry;
     // Most of the time, the entry module is a real file.

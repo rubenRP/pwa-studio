@@ -9,12 +9,14 @@ const path = require('path');
 const loadEnvironment = require('../../Utilities/loadEnvironment');
 const getClientConfig = require('./getClientConfig');
 const getModuleRules = require('./getModuleRules');
+const getPlugins = require('./getPlugins');
 const getResolveLoader = require('./getResolveLoader');
 const getSpecialFlags = require('./getSpecialFlags');
 const MagentoResolver = require('../MagentoResolver');
 const BuildBus = require('../../BuildBus');
 const BuildBusPlugin = require('../plugins/BuildBusPlugin');
 const ModuleTransformConfig = require('../ModuleTransformConfig');
+const prettyLogger = require('../../util/pretty-logger');
 
 /**
  * Helps convert PWA Studio Buildpack settings and project properties into
@@ -124,9 +126,8 @@ async function configureWebpack(options) {
         };
     }
 
-    const busTrackingQueue = [];
     const bus = BuildBus.for(context);
-    bus.attach('configureWebpack', (...args) => busTrackingQueue.push(args));
+    bus.attach('configureWebpack', prettyLogger.info);
     bus.init();
 
     const babelRootMode = await getBabelRootMode(context);
@@ -159,17 +160,17 @@ async function configureWebpack(options) {
 
     const mode = getMode(options.env, projectConfig);
 
-    const transforms = new ModuleTransformConfig(
+    const transforms = ModuleTransformConfig.create(
         resolver,
         require(path.resolve(context, 'package.json')).name
     );
 
     /** @typedef {import('../../BuildBus/declare-base)} BuiltinTargets */
 
-    bus.getTargetsOf('@magento/pwa-buildpack').transformModules.call(x =>
-        transforms.add(x)
-    );
-    const transformRequests = await transforms.toLoaderOptions();
+    await bus
+        .getTargetsOf('@magento/pwa-buildpack')
+        .transformModules.promise(transforms);
+    const transformRequests = await transforms.groupByType();
 
     const configHelper = {
         mode,
@@ -189,7 +190,7 @@ async function configureWebpack(options) {
         vendor: options.vendor || []
     });
 
-    const buildBusPlugin = new BuildBusPlugin(bus, busTrackingQueue);
+    const buildBusPlugin = new BuildBusPlugin(bus);
     clientConfig.plugins.unshift(buildBusPlugin);
 
     return clientConfig;
@@ -197,6 +198,7 @@ async function configureWebpack(options) {
 
 configureWebpack.getClientConfig = getClientConfig;
 configureWebpack.getModuleRules = getModuleRules;
+configureWebpack.getPlugins = getPlugins;
 configureWebpack.getResolveLoader = getResolveLoader;
 configureWebpack.getSpecialFlags = getSpecialFlags;
 

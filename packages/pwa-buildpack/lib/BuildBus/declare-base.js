@@ -67,7 +67,7 @@ module.exports = targets => {
          *
          * @see [transformModules intercept function]{@link transformModulesIntercept}
          *
-         * @member {tapable.SyncHook}
+         * @member {tapable.AsyncSeriesHook}
          *
          * @example <caption>Strip unnecessary Lodash code from a specific JS module.</caption>
          * targets.of('@magento/pwa-buildpack').transformModules.tap(addTransform => addTransform({
@@ -77,7 +77,7 @@ module.exports = targets => {
          *   options: { id: ["async", "lodash-bound" ]}
          * }));
          */
-        transformModules: new targets.types.Sync(['requestTransform']),
+        transformModules: new targets.types.AsyncSeries(['requestTransform']),
 
         /**
          *
@@ -201,12 +201,10 @@ module.exports = targets => {
                  * argument. So we expect it and bind it.
                  */
                 ...tapInfo,
-                fn: (requestTransform, ...args) => {
-                    // Ensure the request always has the right `requestor`.
-                    const requestOwnModuleTransform = request =>
-                        requestTransform({ ...request, requestor });
-                    // yoink!
-                    return callback(requestOwnModuleTransform, ...args);
+                fn: (addTransform, ...args) => {
+                    // Tell the transformConfig who the current `requestor` is.
+                    addTransform._setRequestor(requestor);
+                    return callback(addTransform, ...args);
                 }
             };
         }
