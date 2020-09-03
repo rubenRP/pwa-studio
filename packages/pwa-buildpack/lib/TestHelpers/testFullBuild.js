@@ -67,7 +67,7 @@ async function buildModuleWith(
     await bus
         .getTargetsOf('@magento/pwa-buildpack')
         .transformModules.promise(transforms);
-    const transformRequests = await transforms.groupByType();
+    const transformRequests = await transforms.collect();
 
     let entry;
     // Most of the time, the entry module is a real file.

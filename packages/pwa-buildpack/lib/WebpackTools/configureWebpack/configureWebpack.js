@@ -170,7 +170,7 @@ async function configureWebpack(options) {
     await bus
         .getTargetsOf('@magento/pwa-buildpack')
         .transformModules.promise(transforms);
-    const transformRequests = await transforms.groupByType();
+    const transformRequests = await transforms.collect();
 
     const configHelper = {
         mode,
