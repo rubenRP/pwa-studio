@@ -116,6 +116,7 @@ class MagentoResolver {
         if (newConfig) {
             this.config = newConfig;
         }
+        this._invalidate();
     }
     /**
      * Asynchronously resolve a path the same way Webpack would given the
